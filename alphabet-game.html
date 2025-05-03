@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Алфавит</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+        }
+        
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            min-height: 100vh;
+            background-color: #f5f5f5;
+            padding: 20px;
+        }
+        
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 800px;
+            margin-bottom: 20px;
+        }
+        
+        .locale-selector {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .locale-button {
+            background-color: white;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 8px 15px;
+            cursor: pointer;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .locale-button:after {
+            content: '';
+            width: 0;
+            height: 0;
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-top: 5px solid #333;
+            margin-left: 10px;
+        }
+        
+        .locale-dropdown {
+            display: none;
+            position: absolute;
+            background-color: white;
+            min-width: 120px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            z-index: 1;
+            border-radius: 5px;
+            margin-top: 2px;
+        }
+        
+        .locale-dropdown a {
+            color: black;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+        }
+        
+        .locale-dropdown a:hover {
+            background-color: #f1f1f1;
+        }
+        
+        .help-button {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: white;
+            border: 1px solid #ccc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .main-circle {
+            position: relative;
+            width: 280px;
+            height: 280px;
+            border-radius: 50%;
+            border: 3px solid #e6c200;
+            background-color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin: 20px 0;
+        }
+        
+        @media (min-width: 768px) {
+            .main-circle {
+                width: 350px;
+                height: 350px;
+            }
+        }
+        
+        .letter {
+            font-size: 120px;
+            font-weight: bold;
+            line-height: 1;
+        }
+        
+        .hand {
+            font-size: 70px;
+            color: #999;
+            margin-top: 20px;
+        }
+        
+        .speed-control {
+            width: 100%;
+            max-width: 800px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 40px 0;
+        }
+        
+        .slider-container {
+            width: 80%;
+            margin-bottom: 10px;
+        }
+        
+        .slider {
+            width: 100%;
+        }
+        
+        .speed-label {
+            font-size: 16px;
+            color: #666;
+        }
+        
+        .instructions {
+            font-size: 16px;
+            color: #666;
+            text-align: center;
+            margin-top: 20px;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 2;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+        }
+        
+        .modal-content {
+            background-color: white;
+            margin: 15% auto;
+            padding: 20px;
+            border-radius: 5px;
+            width: 80%;
+            max-width: 600px;
+        }
+        
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+        }
+        
+        .modal-title {
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+        
+        .modal-text {
+            line-height: 1.6;
+        }
+        
+        .modal-link {
+            display: inline-block;
+            margin-top: 20px;
+            color: #3366cc;
+            text-decoration: none;
+        }
+        
+        .modal-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="top-bar">
+        <div class="locale-selector">
+            <div class="locale-button" id="locale-button">RU</div>
+            <div class="locale-dropdown" id="locale-dropdown">
+                <a href="#" data-locale="ru">RU</a>
+                <a href="#" data-locale="ua">UA</a>
+                <a href="#" data-locale="en">EN</a>
+                <a href="#" data-locale="jp">JP</a>
+                <a href="#" data-locale="ka">KA</a>
+            </div>
+        </div>
+        
+        <div class="help-button" id="help-button">?</div>
+    </div>
+    
+    <div class="main-circle">
+        <div class="letter" id="letter">А</div>
+        <div class="hand" id="hand">П</div>
+    </div>
+    
+    <div class="speed-control">
+        <div class="slider-container">
+            <input type="range" min="0.2" max="3" step="0.1" value="1" class="slider" id="speed-slider">
+        </div>
+        <div class="speed-label">Скорость: <span id="speed-value">1.0</span> перемена в секунду</div>
+    </div>
+    
+    <div class="instructions">Произнесите букву и поднимите указанную руку</div>
+    
+    <div id="about-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" id="close-modal">&times;</span>
+            <h2 class="modal-title">Об игре "Алфавит"</h2>
+            <p class="modal-text">
+                Игра "Алфавит" является упражнением из нового кода НЛП. 
+                <br><br>
+                Произносите букву, которая отображается в верхней части круга, одновременно
+                поднимая руку, указанную в нижней части круга.
+                <br><br>
+                П - правая рука<br>
+                Л - левая рука<br>
+                О - обе руки
+                <br><br>
+                Автор: Vasilii Rozhnikov
+            </p>
+            <a href="https://buymeacoffee.com/shiawasenahoshi" target="_blank" class="modal-link">Buy me a coffee</a>
+        </div>
+    </div>
+    
+    <script>
+        // Localization data
+        const locales = {
+            ru: {
+                alphabet: 'АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ',
+                hands: {
+                    right: 'П',
+                    left: 'Л',
+                    both: 'О'
+                },
+                speedLabel: 'Скорость: {speed} перемена в секунду',
+                instructions: 'Произнесите букву и поднимите указанную руку',
+                aboutTitle: 'Об игре "Алфавит"',
+                aboutText: 'Игра "Алфавит" является упражнением из нового кода НЛП. <br><br>Произносите букву, которая отображается в верхней части круга, одновременно поднимая руку, указанную в нижней части круга.<br><br>П - правая рука<br>Л - левая рука<br>О - обе руки<br><br>Автор: Vasilii Rozhnikov',
+                buyMeCoffee: 'Buy me a coffee'
+            },
+            ua: {
+                alphabet: 'АБВГҐДЕЄЖЗИІЇЙКЛМНОПРСТУФХЦЧШЩЬЮЯ',
+                hands: {
+                    right: 'П',
+                    left: 'Л',
+                    both: 'О'
+                },
+                speedLabel: 'Швидкість: {speed} зміна на секунду',
+                instructions: 'Вимовте літеру та підніміть вказану руку',
+                aboutTitle: 'Про гру "Алфавіт"',
+                aboutText: 'Гра "Алфавіт" є вправою з нового коду НЛП. <br><br>Вимовляйте літеру, яка відображається у верхній частині кола, одночасно піднімаючи руку, вказану в нижній частині кола.<br><br>П - права рука<br>Л - ліва рука<br>О - обидві руки<br><br>Автор: Vasilii Rozhnikov',
+                buyMeCoffee: 'Buy me a coffee'
+            },
+            en: {
+                alphabet: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+                hands: {
+                    right: 'R',
+                    left: 'L',
+                    both: 'B'
+                },
+                speedLabel: 'Speed: {speed} change per second',
+                instructions: 'Pronounce the letter and raise the indicated hand',
+                aboutTitle: 'About "Alphabet" Game',
+                aboutText: 'The "Alphabet" game is an exercise from the new NLP code. <br><br>Pronounce the letter displayed at the top of the circle while simultaneously raising the hand indicated at the bottom of the circle.<br><br>R - right hand<br>L - left hand<br>B - both hands<br><br>Author: Vasilii Rozhnikov',
+                buyMeCoffee: 'Buy me a coffee'
+            },
+            jp: {
+                alphabet: 'あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわをん',
+                hands: {
+                    right: 'み',
+                    left: 'ひ',
+                    both: 'り'
+                },
+                speedLabel: '速度: {speed} 秒間に1回変更',
+                instructions: '文字を発音して指定された手を挙げてください',
+                aboutTitle: '"アルファベット"ゲームについて',
+                aboutText: '"アルファベット"ゲームは新しいNLPコードからの演習です。 <br><br>円の上部に表示される文字を発音しながら、円の下部に示されている手を同時に挙げます。<br><br>み - 右手<br>ひ - 左手<br>り - 両手<br><br>著者: Vasilii Rozhnikov',
+                buyMeCoffee: 'Buy me a coffee'
+            },
+            ka: {
+                alphabet: 'აბგდევზთიკლმნოპჟრსტუფქღყშჩცძწჭხჯჰ',
+                hands: {
+                    right: 'მ',
+                    left: 'ც',
+                    both: 'ო'
+                },
+                speedLabel: 'სიჩქარე: {speed} ცვლილება წამში',
+                instructions: 'წარმოთქვით ასო და აწიეთ მითითებული ხელი',
+                aboutTitle: 'თამაშის "ანბანი" შესახებ',
+                aboutText: 'თამაში "ანბანი" არის სავარჯიშო ახალი NLP კოდიდან. <br><br>წარმოთქვით წრის ზედა ნაწილში ნაჩვენები ასო და ამავე დროს აწიეთ წრის ქვედა ნაწილში მითითებული ხელი.<br><br>მ - მარჯვენა ხელი<br>ც - მარცხენა ხელი<br>ო - ორივე ხელი<br><br>ავტორი: Vasilii Rozhnikov',
+                buyMeCoffee: 'Buy me a coffee'
+            }
+        };
+        
+        // DOM Elements
+        const letterElement = document.getElementById('letter');
+        const handElement = document.getElementById('hand');
+        const speedSlider = document.getElementById('speed-slider');
+        const speedValue = document.getElementById('speed-value');
+        const localeButton = document.getElementById('locale-button');
+        const localeDropdown = document.getElementById('locale-dropdown');
+        const helpButton = document.getElementById('help-button');
+        const aboutModal = document.getElementById('about-modal');
+        const closeModal = document.getElementById('close-modal');
+        
+        // State Variables
+        let currentLocale = localStorage.getItem('locale') || 'ru';
+        let currentSpeed = parseFloat(localStorage.getItem('speed') || 1.0);
+        let intervalId = null;
+        let currentIndex = 0;
+        
+        // Initialize
+        function init() {
+            // Set initial values
+            speedSlider.value = currentSpeed;
+            speedValue.textContent = currentSpeed.toFixed(1);
+            localeButton.textContent = currentLocale.toUpperCase();
+            
+            // Update content for current locale
+            updateContent();
+            
+            // Start the game
+            startGame();
+            
+            // Event listeners
+            setupEventListeners();
+        }
+        
+        // Update content for the current locale
+        function updateContent() {
+            const locale = locales[currentLocale];
+            
+            // Update speed label
+            document.querySelector('.speed-label').textContent = locale.speedLabel.replace('{speed}', currentSpeed.toFixed(1));
+            
+            // Update instructions
+            document.querySelector('.instructions').textContent = locale.instructions;
+            
+            // Update modal content
+            document.querySelector('.modal-title').textContent = locale.aboutTitle;
+            document.querySelector('.modal-text').innerHTML = locale.aboutText;
+            document.querySelector('.modal-link').textContent = locale.buyMeCoffee;
+            
+            // Reset current index
+            currentIndex = 0;
+            
+            // Show first letter and hand
+            updateLetterAndHand();
+        }
+        
+        // Update the displayed letter and hand
+        function updateLetterAndHand() {
+            const locale = locales[currentLocale];
+            const alphabet = locale.alphabet;
+            const hands = [locale.hands.right, locale.hands.left, locale.hands.both];
+            
+            // Get current letter
+            const letter = alphabet[currentIndex % alphabet.length];
+            
+            // Get random hand
+            const hand = hands[Math.floor(Math.random() * hands.length)];
+            
+            // Update the display
+            letterElement.textContent = letter;
+            handElement.textContent = hand;
+            
+            // Increment index
+            currentIndex++;
+        }
+        
+        // Start the game interval
+        function startGame() {
+            // Clear existing interval if any
+            if (intervalId) {
+                clearInterval(intervalId);
+            }
+            
+            // Calculate interval in milliseconds
+            const interval = 1000 / currentSpeed;
+            
+            // Set new interval
+            intervalId = setInterval(updateLetterAndHand, interval);
+        }
+        
+        // Setup event listeners
+        function setupEventListeners() {
+            // Speed slider
+            speedSlider.addEventListener('input', function() {
+                currentSpeed = parseFloat(this.value);
+                speedValue.textContent = currentSpeed.toFixed(1);
+                
+                // Update locale specific text
+                const locale = locales[currentLocale];
+                document.querySelector('.speed-label').textContent = locale.speedLabel.replace('{speed}', currentSpeed.toFixed(1));
+                
+                // Save to localStorage
+                localStorage.setItem('speed', currentSpeed);
+                
+                // Restart game with new speed
+                startGame();
+            });
+            
+            // Locale dropdown toggle
+            localeButton.addEventListener('click', function() {
+                const display = localeDropdown.style.display;
+                localeDropdown.style.display = display === 'block' ? 'none' : 'block';
+            });
+            
+            // Close dropdown when clicking outside
+            window.addEventListener('click', function(event) {
+                if (!event.target.matches('.locale-button')) {
+                    localeDropdown.style.display = 'none';
+                }
+            });
+            
+            // Locale selection
+            document.querySelectorAll('.locale-dropdown a').forEach(item => {
+                item.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    currentLocale = this.getAttribute('data-locale');
+                    localeButton.textContent = currentLocale.toUpperCase();
+                    localeDropdown.style.display = 'none';
+                    
+                    // Save to localStorage
+                    localStorage.setItem('locale', currentLocale);
+                    
+                    // Update content
+                    updateContent();
+                    
+                    // Restart game
+                    startGame();
+                });
+            });
+            
+            // Help button
+            helpButton.addEventListener('click', function() {
+                aboutModal.style.display = 'block';
+            });
+            
+            // Close modal
+            closeModal.addEventListener('click', function() {
+                aboutModal.style.display = 'none';
+            });
+            
+            // Click outside to close modal
+            window.addEventListener('click', function(event) {
+                if (event.target === aboutModal) {
+                    aboutModal.style.display = 'none';
+                }
+            });
+        }
+        
+        // Initialize the app
+        window.onload = init;
+    </script>
+</body>
+</html>
