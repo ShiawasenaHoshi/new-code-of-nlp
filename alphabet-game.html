@@ -446,11 +446,11 @@
 
         // Start new timer
         inactivityTimer = setTimeout(() => {
-            // Hide elements after 30 seconds of inactivity
+            // Hide elements after 15 seconds of inactivity
             uiElements.forEach(element => {
                 element.classList.add('fade-out');
             });
-        }, 30000); // 30 seconds
+        }, 15000); // 15 seconds
     }
 
     // Update content for the current locale
