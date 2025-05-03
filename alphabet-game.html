@@ -125,6 +125,15 @@
             margin-top: 20px;
         }
 
+        .ui-elements {
+            opacity: 1;
+            transition: opacity 0.5s ease-in-out;
+        }
+
+        .ui-elements.fade-out {
+            opacity: 0;
+        }
+
         .speed-control {
             width: 100%;
             max-width: 800px;
@@ -212,7 +221,7 @@
     </style>
 </head>
 <body>
-<div class="top-bar">
+<div class="top-bar ui-elements">
     <div class="locale-selector">
         <div class="locale-button" id="locale-button">RU</div>
         <div class="locale-dropdown" id="locale-dropdown">
@@ -232,14 +241,14 @@
     <div class="hand" id="hand">П</div>
 </div>
 
-<div class="speed-control">
+<div class="speed-control ui-elements">
     <div class="slider-container">
         <input type="range" min="0.2" max="3" step="0.1" value="1" class="slider" id="speed-slider">
     </div>
     <div class="speed-label">Скорость: <span id="speed-value">1.0</span> перемена в секунду</div>
 </div>
 
-<div class="instructions">Произнесите букву и поднимите указанную руку</div>
+<div class="instructions ui-elements">Произнесите букву и поднимите указанную руку. Скорость постепенно увеличивается. Чтобы сбросить скорость, передвиньте ползунок или обновите страницу.</div>
 
 <div id="about-modal" class="modal">
     <div class="modal-content">
@@ -254,6 +263,8 @@
             П - правая рука<br>
             Л - левая рука<br>
             О - обе руки
+            <br><br>
+            Скорость игры постепенно увеличивается со временем для повышения сложности. Чтобы сбросить скорость на начальную, передвиньте ползунок или обновите страницу.
             <br><br>
             Автор: Vasilii Rozhnikov
         </p>
@@ -341,56 +352,17 @@
     const helpButton = document.getElementById('help-button');
     const aboutModal = document.getElementById('about-modal');
     const closeModal = document.getElementById('close-modal');
+    const uiElements = document.querySelectorAll('.ui-elements');
 
     // State Variables
     let currentLocale = localStorage.getItem('locale') || 'ru';
     let initialSpeed = parseFloat(localStorage.getItem('speed') || 1.0);
     let currentSpeed = initialSpeed;
-    let gameTimer = null;  // Новый таймер вместо intervalId
+    let gameTimer = null;
     let speedIncreaseId = null;
     let lastUpdateTime = 0;
     let speedIncreaseCoefficient = 0.002; // 0.2% per second
-
-    // Initialize
-    function init() {
-        // Set initial values
-        initialSpeed = parseFloat(localStorage.getItem('speed') || 1.0);
-        currentSpeed = initialSpeed;
-        speedSlider.value = initialSpeed;
-        speedValue.textContent = initialSpeed.toFixed(1);
-        localeButton.textContent = currentLocale.toUpperCase();
-
-        // Update content for current locale
-        updateContent();
-
-        // Start the game
-        startGame();
-
-        // Event listeners
-        setupEventListeners();
-    }
-
-    // Update content for the current locale
-    function updateContent() {
-        const locale = locales[currentLocale];
-
-        // Update speed label
-        document.querySelector('.speed-label').textContent = locale.speedLabel.replace('{speed}', currentSpeed.toFixed(1));
-
-        // Update instructions
-        document.querySelector('.instructions').textContent = locale.instructions;
-
-        // Update modal content
-        document.querySelector('.modal-title').textContent = locale.aboutTitle;
-        document.querySelector('.modal-text').innerHTML = locale.aboutText;
-        document.querySelector('.modal-link').textContent = locale.buyMeCoffee;
-
-        // Reset current index
-        currentIndex = 0;
-
-        // Show first letter and hand
-        updateLetterAndHand();
-    }
+    let inactivityTimer = null;
 
     // Update the displayed letter and hand
     function updateLetterAndHand() {
@@ -460,6 +432,65 @@
         // No need to restart anything as the gameLoop uses the current speed value directly
     }
 
+    // Function to reset inactivity timer
+    function resetInactivityTimer() {
+        // Clear existing timer
+        if (inactivityTimer) {
+            clearTimeout(inactivityTimer);
+        }
+
+        // Show elements (remove fade-out class if present)
+        uiElements.forEach(element => {
+            element.classList.remove('fade-out');
+        });
+
+        // Start new timer
+        inactivityTimer = setTimeout(() => {
+            // Hide elements after 30 seconds of inactivity
+            uiElements.forEach(element => {
+                element.classList.add('fade-out');
+            });
+        }, 30000); // 30 seconds
+    }
+
+    // Update content for the current locale
+    function updateContent() {
+        const locale = locales[currentLocale];
+
+        // Update speed label
+        document.querySelector('.speed-label').textContent = locale.speedLabel.replace('{speed}', initialSpeed.toFixed(1));
+
+        // Update instructions
+        document.querySelector('.instructions').textContent = locale.instructions;
+
+        // Update modal content
+        document.querySelector('.modal-title').textContent = locale.aboutTitle;
+        document.querySelector('.modal-text').innerHTML = locale.aboutText;
+        document.querySelector('.modal-link').textContent = locale.buyMeCoffee;
+    }
+
+    // Initialize
+    function init() {
+        // Set initial values
+        initialSpeed = parseFloat(localStorage.getItem('speed') || 1.0);
+        currentSpeed = initialSpeed;
+        speedSlider.value = initialSpeed;
+        speedValue.textContent = initialSpeed.toFixed(1);
+        localeButton.textContent = currentLocale.toUpperCase();
+
+        // Update content for current locale
+        updateContent();
+
+        // Start the game
+        startGame();
+
+        // Initialize inactivity detection
+        resetInactivityTimer();
+
+        // Event listeners
+        setupEventListeners();
+    }
+
     // Setup event listeners
     function setupEventListeners() {
         // Speed slider
@@ -477,12 +508,16 @@
 
             // Reset timer by restarting game
             startGame();
+
+            // Reset inactivity timer
+            resetInactivityTimer();
         });
 
         // Locale dropdown toggle
         localeButton.addEventListener('click', function() {
             const display = localeDropdown.style.display;
             localeDropdown.style.display = display === 'block' ? 'none' : 'block';
+            resetInactivityTimer();
         });
 
         // Close dropdown when clicking outside
@@ -490,6 +525,7 @@
             if (!event.target.matches('.locale-button')) {
                 localeDropdown.style.display = 'none';
             }
+            resetInactivityTimer();
         });
 
         // Locale selection
@@ -508,25 +544,37 @@
 
                 // Restart game
                 startGame();
+
+                // Reset inactivity timer
+                resetInactivityTimer();
             });
         });
 
         // Help button
         helpButton.addEventListener('click', function() {
             aboutModal.style.display = 'block';
+            resetInactivityTimer();
         });
 
         // Close modal
         closeModal.addEventListener('click', function() {
             aboutModal.style.display = 'none';
+            resetInactivityTimer();
         });
 
         // Click outside to close modal
         window.addEventListener('click', function(event) {
             if (event.target === aboutModal) {
                 aboutModal.style.display = 'none';
+                resetInactivityTimer();
             }
         });
+
+        // Add event listeners for mouse movement and touch events
+        document.addEventListener('mousemove', resetInactivityTimer);
+        document.addEventListener('touchstart', resetInactivityTimer);
+        document.addEventListener('touchmove', resetInactivityTimer);
+        document.addEventListener('keydown', resetInactivityTimer);
     }
 
     // Initialize the app
