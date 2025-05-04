@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Радуга</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            min-height: 100vh;
+            background-color: #f5f5f5;
+            padding: 20px;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            margin-bottom: 20px;
+            z-index: 1;
+            position: relative;
+        }
+
+        .locale-selector {
+            position: relative;
+            display: inline-block;
+        }
+
+        .locale-button {
+            background-color: white;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 8px 15px;
+            cursor: pointer;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+        }
+
+        .locale-button:after {
+            content: '';
+            width: 0;
+            height: 0;
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-top: 5px solid #333;
+            margin-left: 10px;
+        }
+
+        .locale-dropdown {
+            display: none;
+            position: absolute;
+            background-color: white;
+            min-width: 120px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            z-index: 1;
+            border-radius: 5px;
+            margin-top: 2px;
+        }
+
+        .locale-dropdown a {
+            color: black;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+        }
+
+        .locale-dropdown a:hover {
+            background-color: #f1f1f1;
+        }
+
+        .help-button {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: white;
+            border: 1px solid #ccc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .game-area {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            background-color: transparent;
+        }
+
+        .color-box {
+            position: absolute;
+            text-align: center;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            border-radius: 5px;
+            transition: opacity 0.3s ease;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+            opacity: 0;
+            width: 25vw;
+            height: 15vh;
+            font-size: calc(min(3vw, 4.8vh));
+            padding: 1vmin 2vmin;
+            overflow: hidden;
+        }
+
+        .color-box.visible {
+            opacity: 1;
+        }
+
+        .ui-elements {
+            opacity: 1;
+            transition: opacity 0.5s ease-in-out;
+            position: relative;
+            z-index: 1;
+        }
+
+        .ui-elements.fade-out {
+            opacity: 0;
+        }
+
+        .speed-control {
+            width: 100%;
+            max-width: 800px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 40px 0;
+            position: relative;
+            z-index: 1;
+        }
+
+        .slider-container {
+            width: 80%;
+            margin-bottom: 10px;
+        }
+
+        .slider {
+            width: 100%;
+        }
+
+        .speed-label {
+            font-size: 16px;
+            color: #666;
+        }
+
+        .instructions {
+            font-size: 16px;
+            color: #666;
+            text-align: center;
+            margin-top: 20px;
+            max-width: 800px;
+            position: relative;
+            z-index: 1;
+            background-color: rgba(245, 245, 245, 0.7);
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 2;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 15% auto;
+            padding: 20px;
+            border-radius: 5px;
+            width: 80%;
+            max-width: 600px;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+        }
+
+        .modal-title {
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+
+        .modal-text {
+            line-height: 1.6;
+        }
+
+        .modal-link {
+            display: inline-block;
+            margin-top: 20px;
+            color: #3366cc;
+            text-decoration: none;
+        }
+
+        .modal-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+<div class="top-bar ui-elements">
+    <div class="locale-selector">
+        <div class="locale-button" id="locale-button">RU</div>
+        <div class="locale-dropdown" id="locale-dropdown">
+            <a href="#" data-locale="ru">RU</a>
+            <a href="#" data-locale="ua">UA</a>
+            <a href="#" data-locale="en">EN</a>
+            <a href="#" data-locale="jp">JP</a>
+            <a href="#" data-locale="ge">GE</a>
+        </div>
+    </div>
+
+    <div class="help-button" id="help-button">?</div>
+</div>
+
+<div class="game-area" id="game-area">
+    <!-- Color boxes will be dynamically added here -->
+</div>
+
+<div class="speed-control ui-elements">
+    <div class="slider-container">
+        <input type="range" min="0.2" max="3" step="0.1" value="1" class="slider" id="speed-slider">
+    </div>
+    <div class="speed-label">Начальная скорость: <span id="speed-value">1.0</span> перемена в секунду</div>
+</div>
+
+<div class="instructions ui-elements" id="instructions">Называйте цвет прямоугольника, а не слово на нём. При слове "хлопок" хлопните в ладоши.</div>
+
+<div id="about-modal" class="modal">
+    <div class="modal-content">
+        <span class="close" id="close-modal">&times;</span>
+        <h2 class="modal-title">Об игре "Радуга"</h2>
+        <p class="modal-text">
+            Игра "Радуга" является упражнением из нового кода НЛП.
+            <br><br>
+            По экрану появляются цветные прямоугольники с названиями цветов. Ваша задача - называть именно цвет прямоугольника, а не то, что на нём написано.
+            <br><br>
+            Если на прямоугольнике написано слово "хлопок", нужно хлопнуть в ладоши.
+            <br><br>
+            Скорость игры постепенно увеличивается со временем для повышения сложности. Чтобы сбросить скорость на начальную, передвиньте ползунок или обновите страницу.
+            <br><br>
+            Автор: Vasilii Rozhnikov
+        </p>
+        <a href="https://buymeacoffee.com/shiawasenahoshi" target="_blank" class="modal-link">Buy me a coffee</a>
+    </div>
+</div>
+
+<script>
+    // Localization data
+    const locales = {
+        ru: {
+            colors: {
+                red: {
+                    name: 'КРАСНЫЙ',
+                    hex: '#ff0000'
+                },
+                orange: {
+                    name: 'ОРАНЖЕВЫЙ',
+                    hex: '#ff8800'
+                },
+                yellow: {
+                    name: 'ЖЕЛТЫЙ',
+                    hex: '#ffcc00'
+                },
+                green: {
+                    name: 'ЗЕЛЕНЫЙ',
+                    hex: '#00cc00'
+                },
+                blue: {
+                    name: 'СИНИЙ',
+                    hex: '#0088ff'
+                },
+                purple: {
+                    name: 'ФИОЛЕТОВЫЙ',
+                    hex: '#8800ff'
+                },
+                black: {
+                    name: 'ЧЕРНЫЙ',
+                    hex: '#333333'
+                },
+                gray: {
+                    name: 'СЕРЫЙ',
+                    hex: '#999999'
+                }
+            },
+            clap: 'ХЛОПОК',
+            speedLabel: 'Начальная скорость: {speed} перемена в секунду',
+            instructions: 'Называйте цвет прямоугольника, а не слово на нём. При слове "хлопок" хлопните в ладоши.',
+            aboutTitle: 'Об игре "Радуга"',
+            aboutText: 'Игра "Радуга" является упражнением из нового кода НЛП. <br><br>По экрану появляются цветные прямоугольники с названиями цветов. Ваша задача - называть именно цвет прямоугольника, а не то, что на нём написано. <br><br>Если на прямоугольнике написано слово "хлопок", нужно хлопнуть в ладоши.<br><br>Скорость игры постепенно увеличивается со временем для повышения сложности. Чтобы сбросить скорость на начальную, передвиньте ползунок или обновите страницу.<br><br>Автор: Vasilii Rozhnikov',
+            buyMeCoffee: 'Buy me a coffee'
+        },
+        ua: {
+            colors: {
+                red: {
+                    name: 'ЧЕРВОНИЙ',
+                    hex: '#ff0000'
+                },
+                orange: {
+                    name: 'ПОМАРАНЧЕВИЙ',
+                    hex: '#ff8800'
+                },
+                yellow: {
+                    name: 'ЖОВТИЙ',
+                    hex: '#ffcc00'
+                },
+                green: {
+                    name: 'ЗЕЛЕНИЙ',
+                    hex: '#00cc00'
+                },
+                blue: {
+                    name: 'СИНІЙ',
+                    hex: '#0088ff'
+                },
+                purple: {
+                    name: 'ФІОЛЕТОВИЙ',
+                    hex: '#8800ff'
+                },
+                black: {
+                    name: 'ЧОРНИЙ',
+                    hex: '#333333'
+                },
+                gray: {
+                    name: 'СІРИЙ',
+                    hex: '#999999'
+                }
+            },
+            clap: 'ПЛЕСК',
+            speedLabel: 'Початкова швидкість: {speed} зміна на секунду',
+            instructions: 'Називайте колір прямокутника, а не слово на ньому. При слові "плеск" плесніть у долоні.',
+            aboutTitle: 'Про гру "Веселка"',
+            aboutText: 'Гра "Веселка" є вправою з нового коду НЛП. <br><br>На екрані з\'являються кольорові прямокутники з назвами кольорів. Ваше завдання - називати саме колір прямокутника, а не те, що на ньому написано. <br><br>Якщо на прямокутнику написано слово "плеск", потрібно плеснути в долоні.<br><br>Швидкість гри поступово збільшується з часом для підвищення складності. Щоб скинути швидкість до початкової, перемістіть повзунок або оновіть сторінку.<br><br>Автор: Vasilii Rozhnikov',
+            buyMeCoffee: 'Buy me a coffee'
+        },
+        en: {
+            colors: {
+                red: {
+                    name: 'RED',
+                    hex: '#ff0000'
+                },
+                orange: {
+                    name: 'ORANGE',
+                    hex: '#ff8800'
+                },
+                yellow: {
+                    name: 'YELLOW',
+                    hex: '#ffcc00'
+                },
+                green: {
+                    name: 'GREEN',
+                    hex: '#00cc00'
+                },
+                blue: {
+                    name: 'BLUE',
+                    hex: '#0088ff'
+                },
+                purple: {
+                    name: 'PURPLE',
+                    hex: '#8800ff'
+                },
+                black: {
+                    name: 'BLACK',
+                    hex: '#333333'
+                },
+                gray: {
+                    name: 'GRAY',
+                    hex: '#999999'
+                }
+            },
+            clap: 'CLAP',
+            speedLabel: 'Initial speed: {speed} change per second',
+            instructions: 'Name the color of the rectangle, not the word written on it. When you see the word "clap", clap your hands.',
+            aboutTitle: 'About "Rainbow" Game',
+            aboutText: 'The "Rainbow" game is an exercise from the new NLP code. <br><br>Colored rectangles with color names appear on the screen. Your task is to name the actual color of the rectangle, not what is written on it. <br><br>If the rectangle shows the word "clap", you need to clap your hands.<br><br>The game speed gradually increases over time to add challenge. To reset the speed to the initial value, move the slider or refresh the page.<br><br>Author: Vasilii Rozhnikov',
+            buyMeCoffee: 'Buy me a coffee'
+        },
+        jp: {
+            colors: {
+                red: {
+                    name: '赤',
+                    hex: '#ff0000'
+                },
+                orange: {
+                    name: 'オレンジ',
+                    hex: '#ff8800'
+                },
+                yellow: {
+                    name: '黄色',
+                    hex: '#ffcc00'
+                },
+                green: {
+                    name: '緑',
+                    hex: '#00cc00'
+                },
+                blue: {
+                    name: '青',
+                    hex: '#0088ff'
+                },
+                purple: {
+                    name: '紫',
+                    hex: '#8800ff'
+                },
+                black: {
+                    name: '黒',
+                    hex: '#333333'
+                },
+                gray: {
+                    name: 'グレー',
+                    hex: '#999999'
+                }
+            },
+            clap: '拍手',
+            speedLabel: '初期速度: {speed} 秒間に1回変更',
+            instructions: '四角形の色を名前で言ってください。中に書かれた言葉ではなく。「拍手」という言葉が表示されたら、手を叩いてください。',
+            aboutTitle: '"レインボー"ゲームについて',
+            aboutText: '"レインボー"ゲームは新しいNLPコードからの演習です。 <br><br>画面に色名が書かれた色付きの四角形が表示されます。あなたの課題は、書かれている内容ではなく、四角形の実際の色を言うことです。 <br><br>四角形に「拍手」という言葉が表示されたら、手を叩く必要があります。<br><br>ゲームの速度は徐々に増加し、難易度が上がります。初期速度にリセットするには、スライダーを動かすかページを更新してください。<br><br>著者: Vasilii Rozhnikov',
+            buyMeCoffee: 'Buy me a coffee'
+        },
+        ge: {
+            colors: {
+                red: {
+                    name: 'წითელი',
+                    hex: '#ff0000'
+                },
+                orange: {
+                    name: 'ნარინჯისფერი',
+                    hex: '#ff8800'
+                },
+                yellow: {
+                    name: 'ყვითელი',
+                    hex: '#ffcc00'
+                },
+                green: {
+                    name: 'მწვანე',
+                    hex: '#00cc00'
+                },
+                blue: {
+                    name: 'ლურჯი',
+                    hex: '#0088ff'
+                },
+                purple: {
+                    name: 'იისფერი',
+                    hex: '#8800ff'
+                },
+                black: {
+                    name: 'შავი',
+                    hex: '#333333'
+                },
+                gray: {
+                    name: 'ნაცრისფერი',
+                    hex: '#999999'
+                }
+            },
+            clap: 'ტაში',
+            speedLabel: 'საწყისი სიჩქარე: {speed} ცვლილება წამში',
+            instructions: 'დაასახელეთ მართკუთხედის ფერი და არა მასზე დაწერილი სიტყვა. როდესაც ხედავთ სიტყვას "ტაში", დაუკარით ტაში.',
+            aboutTitle: 'თამაშის "ცისარტყელა" შესახებ',
+            aboutText: 'თამაში "ცისარტყელა" არის სავარჯიშო ახალი NLP კოდიდან. <br><br>ეკრანზე ჩნდება ფერადი მართკუთხედები ფერის სახელებით. თქვენი დავალებაა დაასახელოთ მართკუთხედის რეალური ფერი და არა ის, რაც მასზეა დაწერილი. <br><br>თუ მართკუთხედზე ჩანს სიტყვა "ტაში", თქვენ უნდა დაუკრათ ტაში.<br><br>თამაშის სიჩქარე თანდათან იზრდება სირთულის გასაზრდელად. საწყის სიჩქარეზე დასაბრუნებლად გადაადგილეთ სლაიდერი ან განაახლეთ გვერდი.<br><br>ავტორი: Vasilii Rozhnikov',
+            buyMeCoffee: 'Buy me a coffee'
+        }
+    };
+
+    // DOM Elements
+    const gameArea = document.getElementById('game-area');
+    const speedSlider = document.getElementById('speed-slider');
+    const speedValue = document.getElementById('speed-value');
+    const localeButton = document.getElementById('locale-button');
+    const localeDropdown = document.getElementById('locale-dropdown');
+    const helpButton = document.getElementById('help-button');
+    const aboutModal = document.getElementById('about-modal');
+    const closeModal = document.getElementById('close-modal');
+    const instructions = document.getElementById('instructions');
+    const uiElements = document.querySelectorAll('.ui-elements');
+
+    // State Variables
+    let currentLocale = localStorage.getItem('locale') || 'ru';
+    let initialSpeed = parseFloat(localStorage.getItem('speed') || 1.0);
+    let currentSpeed = initialSpeed;
+    let gameTimer = null;
+    let speedIncreaseId = null;
+    let lastUpdateTime = 0;
+    let activeBox = null;
+    let speedIncreaseCoefficient = 0.002; // 0.2% per second
+    let inactivityTimer = null;
+
+    // Get all color keys from the current locale
+    function getColorKeys() {
+        return Object.keys(locales[currentLocale].colors);
+    }
+
+    // Get a random color key
+    function getRandomColorKey() {
+        const colorKeys = getColorKeys();
+        return colorKeys[Math.floor(Math.random() * colorKeys.length)];
+    }
+
+    // Get a random position within the game area
+    function getRandomPosition() {
+        // Use window dimensions for position calculations
+        const boxWidth = window.innerWidth * 0.25; // 25% of window width
+        const boxHeight = window.innerHeight * 0.15; // 15% of window height
+        const maxX = window.innerWidth - boxWidth;
+        const maxY = window.innerHeight - boxHeight;
+
+        return {
+            x: Math.max(0, Math.floor(Math.random() * maxX)),
+            y: Math.max(0, Math.floor(Math.random() * maxY))
+        };
+    }
+
+    // Create a new color box
+    function createColorBox() {
+        // Remove the previous box if it exists
+        if (activeBox) {
+            gameArea.removeChild(activeBox);
+            activeBox = null;
+        }
+
+        // Create a new box
+        const box = document.createElement('div');
+        box.className = 'color-box';
+
+        // Get a random color for the background
+        const bgColorKey = getRandomColorKey();
+        const bgColor = locales[currentLocale].colors[bgColorKey].hex;
+
+        // Decide whether to show a color name or "clap"
+        const showClap = Math.random() < 0.2; // 20% chance to show "clap"
+
+        let textContent;
+        if (showClap) {
+            textContent = locales[currentLocale].clap;
+        } else {
+            // Get a random color for the text (may be different from background)
+            const textColorKey = getRandomColorKey();
+            textContent = locales[currentLocale].colors[textColorKey].name;
+        }
+
+        // Apply styles
+        box.style.backgroundColor = bgColor;
+        box.style.color = getContrastColor(bgColor);
+        box.textContent = textContent;
+
+        // Adaptive fontsize
+        adjustFontSize(box, textContent);
+
+        // Set random position
+        const position = getRandomPosition();
+        box.style.left = position.x + 'px';
+        box.style.top = position.y + 'px';
+
+        // Add to the game area
+        gameArea.appendChild(box);
+        activeBox = box;
+
+        // Make the box visible after a short delay (for animation)
+        setTimeout(() => {
+            box.classList.add('visible');
+        }, 10);
+    }
+
+    // Adjust font size based on text length to ensure it fits
+    function adjustFontSize(box, text) {
+        let baseFontSize = 'calc(min(3vw, 4.8vh))';
+
+        if (text.length > 10) {
+            if (text.length > 15) {
+                baseFontSize = 'calc(min(1.8vw, 3vh))';
+            } else {
+                baseFontSize = 'calc(min(2.4vw, 3.6vh))';
+            }
+        }
+
+        box.style.fontSize = baseFontSize;
+    }
+
+    // Determine if white or black text would be more visible on a given background color
+    function getContrastColor(hexColor) {
+        // Convert hex to RGB
+        const r = parseInt(hexColor.substr(1, 2), 16);
+        const g = parseInt(hexColor.substr(3, 2), 16);
+        const b = parseInt(hexColor.substr(5, 2), 16);
+
+        // Calculate luminance
+        const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+
+        // Use white text on dark backgrounds, black text on light backgrounds
+        return luminance > 0.5 ? '#000000' : '#ffffff';
+    }
+
+    // Update game content for the current locale
+    function updateContent() {
+        const locale = locales[currentLocale];
+
+        // Update speed label
+        document.querySelector('.speed-label').textContent = locale.speedLabel.replace('{speed}', initialSpeed.toFixed(1));
+
+        // Update instructions
+        instructions.textContent = locale.instructions;
+
+        // Update modal content
+        document.querySelector('.modal-title').textContent = locale.aboutTitle;
+        document.querySelector('.modal-text').innerHTML = locale.aboutText;
+        document.querySelector('.modal-link').textContent = locale.buyMeCoffee;
+    }
+
+    // Start the game using requestAnimationFrame
+    function startGame() {
+        // Clear existing timers if any
+        if (gameTimer) {
+            cancelAnimationFrame(gameTimer);
+            gameTimer = null;
+        }
+
+        // Clear existing speed increase interval if any
+        if (speedIncreaseId) {
+            clearInterval(speedIncreaseId);
+        }
+
+        // Reset currentSpeed to initialSpeed
+        currentSpeed = initialSpeed;
+
+        // Initialize last update time
+        lastUpdateTime = Date.now();
+
+        // Remove any existing box
+        if (activeBox) {
+            gameArea.removeChild(activeBox);
+            activeBox = null;
+        }
+
+        // Create the first color box
+        createColorBox();
+
+        // Start game loop
+        gameLoop();
+
+        // Start speed increase interval (every second)
+        speedIncreaseId = setInterval(increaseSpeed, 1000);
+    }
+
+    // Game loop using requestAnimationFrame for smoother animation
+    function gameLoop() {
+        const currentTime = Date.now();
+        const deltaTime = currentTime - lastUpdateTime;
+
+        // Check if it's time to update the color box
+        // based on the current speed (changes per second)
+        if (deltaTime >= (1000 / currentSpeed)) {
+            createColorBox();
+            lastUpdateTime = currentTime;
+        }
+
+        // Continue the game loop
+        gameTimer = requestAnimationFrame(gameLoop);
+    }
+
+    // Function to gradually increase speed
+    function increaseSpeed() {
+        // Increase currentSpeed by the coefficient
+        currentSpeed = currentSpeed * (1 + speedIncreaseCoefficient);
+        // No need to restart anything as the gameLoop uses the current speed value directly
+    }
+
+    // Function to reset inactivity timer
+    function resetInactivityTimer() {
+        // Clear existing timer
+        if (inactivityTimer) {
+            clearTimeout(inactivityTimer);
+        }
+
+        // Show elements (remove fade-out class if present)
+        uiElements.forEach(element => {
+            element.classList.remove('fade-out');
+        });
+
+        // Start new timer
+        inactivityTimer = setTimeout(() => {
+            // Hide elements after 15 seconds of inactivity
+            uiElements.forEach(element => {
+                element.classList.add('fade-out');
+            });
+        }, 15000); // 15 seconds
+    }
+
+    // Initialize
+    function init() {
+        // Set initial values
+        initialSpeed = parseFloat(localStorage.getItem('speed') || 1.0);
+        currentSpeed = initialSpeed;
+        speedSlider.value = initialSpeed;
+        speedValue.textContent = initialSpeed.toFixed(1);
+        localeButton.textContent = currentLocale.toUpperCase();
+
+        // Update content for current locale
+        updateContent();
+
+        // Start the game
+        startGame();
+
+        // Initialize inactivity detection
+        resetInactivityTimer();
+
+        // Event listeners
+        setupEventListeners();
+    }
+
+    // Setup event listeners
+    function setupEventListeners() {
+        // Speed slider
+        speedSlider.addEventListener('input', function() {
+            initialSpeed = parseFloat(this.value);
+            currentSpeed = initialSpeed;
+            speedValue.textContent = initialSpeed.toFixed(1);
+
+            // Update locale specific text
+            const locale = locales[currentLocale];
+            document.querySelector('.speed-label').textContent = locale.speedLabel.replace('{speed}', initialSpeed.toFixed(1));
+
+            // Save to localStorage
+            localStorage.setItem('speed', initialSpeed);
+
+            // Reset timer by restarting game
+            startGame();
+
+            // Reset inactivity timer
+            resetInactivityTimer();
+        });
+
+        // Locale dropdown toggle
+        localeButton.addEventListener('click', function() {
+            const display = localeDropdown.style.display;
+            localeDropdown.style.display = display === 'block' ? 'none' : 'block';
+            resetInactivityTimer();
+        });
+
+        // Close dropdown when clicking outside
+        window.addEventListener('click', function(event) {
+            if (!event.target.matches('.locale-button')) {
+                localeDropdown.style.display = 'none';
+            }
+            resetInactivityTimer();
+        });
+
+        // Locale selection
+        document.querySelectorAll('.locale-dropdown a').forEach(item => {
+            item.addEventListener('click', function(e) {
+                e.preventDefault();
+                currentLocale = this.getAttribute('data-locale');
+                localeButton.textContent = currentLocale.toUpperCase();
+                localeDropdown.style.display = 'none';
+
+                // Save to localStorage
+                localStorage.setItem('locale', currentLocale);
+
+                // Update content
+                updateContent();
+
+                // Restart game
+                startGame();
+
+                // Reset inactivity timer
+                resetInactivityTimer();
+            });
+        });
+
+        // Help button
+        helpButton.addEventListener('click', function() {
+            aboutModal.style.display = 'block';
+            resetInactivityTimer();
+        });
+
+        // Close modal
+        closeModal.addEventListener('click', function() {
+            aboutModal.style.display = 'none';
+            resetInactivityTimer();
+        });
+
+        // Click outside to close modal
+        window.addEventListener('click', function(event) {
+            if (event.target === aboutModal) {
+                aboutModal.style.display = 'none';
+                resetInactivityTimer();
+            }
+        });
+
+        // Game area click to reset inactivity timer
+        gameArea.addEventListener('click', resetInactivityTimer);
+
+        // Add event listeners for mouse movement and touch events
+        document.addEventListener('mousemove', resetInactivityTimer);
+        document.addEventListener('touchstart', resetInactivityTimer);
+        document.addEventListener('touchmove', resetInactivityTimer);
+        document.addEventListener('keydown', resetInactivityTimer);
+
+        // Add event listener for window resize to recalculate positions
+        window.addEventListener('resize', function() {
+            if (activeBox) {
+                // Reposition the active box to ensure it's still visible
+                const position = getRandomPosition();
+                activeBox.style.left = position.x + 'px';
+                activeBox.style.top = position.y + 'px';
+            }
+            resetInactivityTimer();
+        });
+    }
+
+    // Initialize the app
+    window.onload = init;
+</script>
+</body>
+</html>
