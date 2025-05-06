@@ -138,13 +138,27 @@
             opacity: 0;
         }
 
+        .bottom-controls {
+            width: 100%;
+            max-width: 800px;
+            position: fixed;
+            bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 1;
+            background-color: rgba(245, 245, 245, 0.7);
+            padding: 15px;
+            border-radius: 10px;
+        }
+
         .speed-control {
             width: 100%;
             max-width: 800px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            margin: 40px 0;
+            margin-bottom: 15px;
             position: relative;
             z-index: 1;
         }
@@ -167,11 +181,9 @@
             font-size: 16px;
             color: #666;
             text-align: center;
-            margin-top: 20px;
             max-width: 800px;
             position: relative;
             z-index: 1;
-            background-color: rgba(245, 245, 245, 0.7);
             padding: 10px;
             border-radius: 5px;
         }
@@ -252,14 +264,16 @@
     <!-- Color boxes will be dynamically added here -->
 </div>
 
-<div class="speed-control ui-elements">
-    <div class="slider-container">
-        <input type="range" min="0.2" max="3" step="0.1" value="1" class="slider" id="speed-slider">
+<div class="bottom-controls ui-elements">
+    <div class="speed-control">
+        <div class="slider-container">
+            <input type="range" min="0.2" max="3" step="0.1" value="1" class="slider" id="speed-slider">
+        </div>
+        <div class="speed-label">Начальная скорость: <span id="speed-value">1.0</span> перемена в секунду</div>
     </div>
-    <div class="speed-label">Начальная скорость: <span id="speed-value">1.0</span> перемена в секунду</div>
-</div>
 
-<div class="instructions ui-elements" id="instructions">Называйте цвет прямоугольника, а не слово на нём. При слове "хлопок" хлопните в ладоши.</div>
+    <div class="instructions" id="instructions">Называйте цвет прямоугольника, а не слово на нём. При слове "хлопок" хлопните в ладоши.</div>
+</div>
 
 <div id="about-modal" class="modal">
     <div class="modal-content">
